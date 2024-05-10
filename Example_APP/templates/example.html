@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <body id="example">
+        <!-- DNA image at the top -->
+        <div class="centered-container">
+            <img class="centered-image" src="{{ url_for('static', filename='images/dna.png') }}" alt="Image">
+        </div>
+
+        <!-- Title at the top -->
+        <h2>{% block title %} SV-Exploration {% endblock %}</h2>
+        
+        <!-- Subtitle below the title -->
+        <h3>Here you can browse interaction between Structural Variants and SNPs.</h3>
+
+        <!-- Here's the first block: GWAS choice, Reference genome and Browsing options -->
+        <form id="exploration_form" method="post">
+            <!-- Reference genome -->
+            <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; width: 45%; float:left">
+                <h1>Reference Genome</h1>
+                <input type="radio" name="refGenome" id="GRCh37" value="GRCh37" checked> GRCh37 </input><br>
+                <input type="radio" name="refGenome" id="GRCh38" value="GRCh38" > GRCh38 </input><br>
+            </div>
+
+            <!-- Browsing option -->
+            <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; width: 45%; float:left">
+                <h1>Browsing options</h1>
+                <style>
+                    /* Style for the textarea */
+                    #browse_option {
+                        height: 30px; /* Adjust the height as needed */
+                        font-size: 16px; /* Adjust the font size as needed */
+                    }
+                </style>
+                Locus/Interval/RsID/Gene <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br> 
+                Window <input type="range" min="1000" max="250000" value="{{ request.form.get('window', '25000') }}" step="1000" name="window" oninput="updateValue(this.value)">
+                <p>Current value: <span id="slider-value">{{ request.form.get('window', '25000') }}</span></p>
+                <small style="color: blue;">Example: 1:1000000 / 1:1000000-1200000 / APOE / rs7412</small>
+            </div>
+            
+            <!-- Submit button to start the search -->
+            <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; text-align: center">
+                <button style="background-color: #4C837A; color: white">Show region!</button>
+            </div>
+        </form>
+
+        <!-- Main Plot -->
+        <!-- <div id="scatter_area"></div> -->
+        <div id="gosling-container"></div>
+        
+        <!-- <div style="display: flex; flex-direction: column; text-align: center;">
+            {% if plot_url %}
+            <div style="margin: 0px; padding: 0px;">
+                <img src="data:image/png;base64,{{ plot_url }}"/>
+            </div>
+            {% endif %}
+        </div> -->
+
+        <!-- Footnote images -->
+        <div class="image-container-foot">
+            <img src="{{ url_for('static', filename='images/amstUMC.jpg') }}" alt="ams">
+            <img src="{{ url_for('static', filename='images/tudelft1.png') }}" alt="tud">
+            <img src="{{ url_for('static', filename='images/github.png') }}" alt="gith">
+        </div>
+    </body>
+{% endblock %}
