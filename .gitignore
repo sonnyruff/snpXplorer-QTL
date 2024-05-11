@@ -1,6 +1,13 @@
 # Created by https://www.toptal.com/developers/gitignore/api/flask,python,venv
 # Edit at https://www.toptal.com/developers/gitignore?templates=flask,python,venv
 
+
+
+### DATA ###
+Example_APP/data_snp_sv/
+
+
+
 ### Flask ###
 instance/*
 !instance/.gitignore
@@ -167,36 +174,13 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+
+
 ### Python ###
-# Byte-compiled / optimized / DLL files
-
-# C extensions
-
-# Distribution / packaging
-
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 
-# Installer logs
-
-# Unit test / coverage reports
-
-# Translations
-
-# Django stuff:
-
-# Flask stuff:
-
-# Scrapy stuff:
-
-# Sphinx documentation
-
-# PyBuilder
-
-# Jupyter Notebook
-
-# IPython
 
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
@@ -223,25 +207,6 @@ cython_debug/
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 
-# Celery stuff
-
-# SageMath parsed files
-
-# Environments
-
-# Spyder project settings
-
-# Rope project settings
-
-# mkdocs documentation
-
-# mypy
-
-# Pyre type checker
-
-# pytype static type analyzer
-
-# Cython debug symbols
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
@@ -258,6 +223,8 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+
 
 ### venv ###
 # Virtualenv
