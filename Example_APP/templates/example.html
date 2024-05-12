@@ -3,23 +3,34 @@
 {% block content %}
     <body id="example">
         <!-- DNA image at the top -->
-        <div class="centered-container">
+        <!-- <div class="centered-container">
             <img class="centered-image" src="{{ url_for('static', filename='images/dna.png') }}" alt="Image">
-        </div>
+        </div> -->
 
         <!-- Title at the top -->
-        <h2>{% block title %} SV-Exploration {% endblock %}</h2>
+        <!-- <h2>{% block title %} QTL-Exploration {% endblock %}</h2> -->
         
         <!-- Subtitle below the title -->
-        <h3>Here you can browse interaction between Structural Variants and SNPs.</h3>
+        <!-- <h3>Here you can browse interaction between Structural Variants and SNPs, and more...</h3> -->
 
         <!-- Here's the first block: GWAS choice, Reference genome and Browsing options -->
         <form id="exploration_form" method="post">
             <!-- Reference genome -->
             <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; width: 45%; float:left">
-                <h1>Reference Genome</h1>
-                <input type="radio" name="refGenome" id="GRCh37" value="GRCh37" checked> GRCh37 </input><br>
+                <h4 style="margin-bottom:0">Reference Genome</h4>
+                <input type="radio" name="refGenome" id="GRCh37" value="GRCh37" checked> GRCh37 </input>
                 <input type="radio" name="refGenome" id="GRCh38" value="GRCh38" > GRCh38 </input><br>
+                <h4 style="margin-bottom:0">Cis/Trans</h4>
+                <label><input type="radio" name="isomer" value="cis"> cis</label>
+                <label><input type="radio" name="isomer" value="trans"> trans</label>
+                <label><input type="radio" name="isomer" value="cis_trans"> cis & trans</label><br>
+                <h4 style="margin-bottom:0">Tissue</h4>
+                <select name="tissue" id="tissue">
+                    <option value="volvo">Whole blood</option>
+                    <option value="saab">Skim blood</option>
+                    <option value="mercedes">0 fat blood</option>
+                    <option value="audi">Skin</option>
+                </select>
             </div>
 
             <!-- Browsing option -->
@@ -35,7 +46,7 @@
                 Locus/Interval/RsID/Gene <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br> 
                 Window <input type="range" min="1000" max="250000" value="{{ request.form.get('window', '25000') }}" step="1000" name="window" oninput="updateValue(this.value)">
                 <p>Current value: <span id="slider-value">{{ request.form.get('window', '25000') }}</span></p>
-                <small style="color: blue;">Example: 1:1000000 / 1:1000000-1200000 / APOE / rs7412</small>
+                <!-- <small style="color: blue;">Example: 1:1000000 / 1:1000000-1200000 / APOE / rs7412</small> -->
             </div>
             
             <!-- Submit button to start the search -->

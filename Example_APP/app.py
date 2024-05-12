@@ -1,5 +1,5 @@
 # Libraries
-from flask import Flask, request, render_template, send_file, session, make_response, redirect, url_for, jsonify
+from flask import Flask, request, render_template, send_file, session, make_response, redirect, url_for, jsonify, Response
 
 from io import BytesIO
 import base64
@@ -7,6 +7,7 @@ import json
 import numpy as np
 
 import pandas as pd
+import csv
 
 # Graphing
 import matplotlib
@@ -25,8 +26,6 @@ from matplotlib_tests import *
 
 # Set path to data
 data_path = '/Data'
-# df = pd.read_csv('./Data/data_example.tar/data_example/chr22.allQTLs.NEWSET.JOIN_size.txt')
-df = pd.read_csv('./data_snp_sv/chr22.allQTLs.TE.txt', sep='\t')
 
 # Initialize the App
 app = Flask(__name__)
@@ -87,6 +86,35 @@ def plotly():
     plot_plotly = plotly_plot()
     # Check if there are new inputs or it is still the previous run
     return render_template("plotly.html", plot_plotly=plot_plotly)
+
+# http://127.0.0.1:5000/chr?chr=22&start=0&size=10
+@app.route('/chr')
+def chr():
+    chrom = request.args.get('chr')
+    start = int(request.args.get('start'))
+    size = int(request.args.get('size'))
+
+    chunk = ""
+    row_count = 0
+
+    with open('./data_snp_sv/chr'+chrom+'.allQTLs.TE.tsv', 'r') as file:
+        reader = csv.reader(file)
+        chunk += reader.__next__()[0]+'\n'
+        for row in reader:
+            if row_count >= start + size:
+                break
+            if row_count >= start:
+                chunk += row[0]+'\n'
+            row_count += 1
+
+    return Response(chunk, mimetype="text/plain")
+
+    # df = pd.read_csv('./data_snp_sv/chr'+chrom+'.allQTLs.TE.tsv', sep='\t', skiprows=start, chunksize=size)
+    # return Response(df, mimetype="text/plain")
+
+    # with open("./data_snp_sv/chr22.allQTLs.TEcopy.tsv", "r") as f:
+    #     content = f.read()
+    # return Response(content, mimetype="text/plain")
 
 # Run the Flask application
 if __name__ == '__main__':
