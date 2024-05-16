@@ -3,6 +3,7 @@ import pandas as pd
 import plotly
 import plotly.graph_objs as go
 import plotly.express as px
+from typing import Any
 
 
 def pandas_df():
@@ -70,4 +71,82 @@ def jklakk():
     fig.show()
 
 
-scatter_plot()
+def stringlist_to_listlist(tissues: list) -> list[list[str]]:
+    output = []
+    for i in tissues:
+        output.append(split_tissue(i))
+    return output
+
+"""
+Args:
+    tissue: Adipose_Subcutaneous_ENSG00000206195.10_0.730738_1.14214e-15
+Returns:
+    ['Adipose_Subcutaneous', 'ENSG00000206195.10', '0.730738', '1.14214e-15']
+"""
+def split_tissue(tissue: str) -> list[str]:
+    arr: list[str] = tissue.split('_')
+    return ["_".join(arr[:-3]), arr[-3], arr[-2], arr[-1]]
+
+
+def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
+    df_snp_ = pd.read_csv('./data/data_snp_sv/chr22.allQTLs.TE.tsv', sep='\t')
+    # df_genes_ = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+    df_eqtl_ = pd.read_csv('./data/summary_eqtls/chr22_summary_eqtls.txt', sep='\t', names=['a', 'b'])
+    # df_snp = df_snp_.iloc[0:100, :]
+    # df_snp = df_snp_.nlargest(1000, 'P') # .sort_values(by=['P']).head(1000)
+    # print(df[df.P < 0.005])
+
+    # Split initial columns into usable ones
+    # df_eqtl_['c'] = df_eqtl_.apply(lambda x: x.snp, axis=1)
+    df_eqtl_[['chr', 'POS', 'ref', 'alt', 'gen_ref']] = df_eqtl_['a'].str.split('_', n=4, expand=True)
+    df_eqtl_['POS'] = df_eqtl_['POS'].astype(int)
+    df_eqtl_['tissues'] = df_eqtl_['b'].str.split(';') # Fucks up because there is a ; at the end
+    df_eqtl_['tissues'] = df_eqtl_['tissues'].apply(lambda x: x[:-1]) # Remove last empty element
+    df_eqtl_['tissues'] = df_eqtl_['tissues'].apply(lambda x: stringlist_to_listlist(x))
+
+    # Remove initial columns
+    df_eqtl_.drop(columns=['a', 'b'], inplace=True)
+
+    # Join on POS/locus
+    # print(df_snp_.set_index('POS').join(df_eqtl_.set_index('locus'), how='inner')) # returns [], how is that even statisticallly possible?
+    print(pd.merge(df_snp_, df_eqtl_, on="POS"))
+    # print(df_snp_.join(df_eqtl_, on="POS", how="inner", lsuffix='_left', rsuffix='_right'))
+    # print(df_eqtl_.iloc[0]["tissues"])
+
+    # left = df_snp_.filter(['POS', 'ID'], axis=1) # df_snp_[['POS', 'ID']].copy() works too (.copy() not necessary)
+    # right = df_eqtl_.filter(['POS', 'gen_ref'], axis=1)
+    # print(type(left['POS'].iloc[0]))
+    # print(type(right['POS'].iloc[0]))
+    # print(pd.merge(left, right, on='POS'))
+    return
+
+    snp = df_snp['POS']
+    sv = df_snp['SV_ID'].apply(lambda x: int(x.split("_")[1]))
+    min_p = df_snp['P'].min()
+    max_p = df_snp['P'].max()
+    scaled_P = (df_snp['P'] - min_p) / (max_p - min_p)
+
+    # fig = px.parallel_coordinates(df,
+    #                           dimensions=['POS', 'A1'],
+    #                           color_continuous_scale=px.colors.diverging.Tealrose,
+    #                           color_continuous_midpoint=2)
+    fig = go.Figure(data=
+        go.Parcoords(
+            # line_color=dict(color = df['P'],
+            #        colorscale = 'Electric',
+            #        showscale = True,
+            #        cmin = -4000,
+            #        cmax = -100),
+            line_color=scaled_P,
+            dimensions = list([
+                dict(range = snp.agg(['min', 'max']),
+                    label = 'SNP', values = snp),
+                dict(range = sv.agg(['min', 'max']),
+                    label = 'SV', values = sv)
+            ])
+        )
+    )
+    fig.show()
+
+
+parallel_plot()

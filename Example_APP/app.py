@@ -97,7 +97,7 @@ def chr():
     chunk = ""
     row_count = 0
 
-    with open('./data_snp_sv/chr'+chrom+'.allQTLs.TE.tsv', 'r') as file:
+    with open('./data/data_snp_sv/chr'+chrom+'.allQTLs.TE.tsv', 'r') as file:
         reader = csv.reader(file)
         chunk += reader.__next__()[0]+'\n'
         for row in reader:
@@ -109,10 +109,10 @@ def chr():
 
     return Response(chunk, mimetype="text/plain")
 
-    # df = pd.read_csv('./data_snp_sv/chr'+chrom+'.allQTLs.TE.tsv', sep='\t', skiprows=start, chunksize=size)
+    # df = pd.read_csv('./data/data_snp_sv/chr'+chrom+'.allQTLs.TE.tsv', sep='\t', skiprows=start, chunksize=size)
     # return Response(df, mimetype="text/plain")
 
-    # with open("./data_snp_sv/chr22.allQTLs.TEcopy.tsv", "r") as f:
+    # with open("./data/data_snp_sv/chr22.allQTLs.TEcopy.tsv", "r") as f:
     #     content = f.read()
     # return Response(content, mimetype="text/plain")
 
