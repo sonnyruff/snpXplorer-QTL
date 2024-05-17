@@ -70,7 +70,12 @@ def jklakk():
     fig = px.parallel_categories(df_tips, color="size", color_continuous_scale=px.colors.sequential.Inferno)
     fig.show()
 
-
+"""
+Args:
+    tissues: ["T1_ENSG#_#_#", "T2_ENSG#_#_#", ...]
+Returns:
+    [["T1", "ENSG#", #, #], ["T2", "ENSG#", #, #], ...]
+"""
 def stringlist_to_listlist(tissues: list) -> list[list[str]]:
     output = []
     for i in tissues:
@@ -88,59 +93,49 @@ def split_tissue(tissue: str) -> list[str]:
     return ["_".join(arr[:-3]), arr[-3], arr[-2], arr[-1]]
 
 
+# TODO Fix the horribly inconsistent filtering, dropping and everything
 def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
+    # SNPs
     df_snp_ = pd.read_csv('./data/data_snp_sv/chr22.allQTLs.TE.tsv', sep='\t')
-    # df_genes_ = pd.read_csv('./data/genes_hg38.txt', sep='\t')
-    df_eqtl_ = pd.read_csv('./data/summary_eqtls/chr22_summary_eqtls.txt', sep='\t', names=['a', 'b'])
-    # df_snp = df_snp_.iloc[0:100, :]
-    # df_snp = df_snp_.nlargest(1000, 'P') # .sort_values(by=['P']).head(1000)
-    # print(df[df.P < 0.005])
+    df_snp = df_snp_.filter(['POS', 'P', 'SV_ID'], axis=1)
+    # df_snp = df_snp.nlargest(1000, 'P') # .sort_values(by=['P']).head(1000)
 
+    # Genes
+    # df_genes = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+
+    # QTLs
+    df_eqtl = pd.read_csv('./data/summary_eqtls/chr22_summary_eqtls.txt', sep='\t', names=['a', 'b'])
     # Split initial columns into usable ones
-    # df_eqtl_['c'] = df_eqtl_.apply(lambda x: x.snp, axis=1)
-    df_eqtl_[['chr', 'POS', 'ref', 'alt', 'gen_ref']] = df_eqtl_['a'].str.split('_', n=4, expand=True)
-    df_eqtl_['POS'] = df_eqtl_['POS'].astype(int)
-    df_eqtl_['tissues'] = df_eqtl_['b'].str.split(';') # Fucks up because there is a ; at the end
-    df_eqtl_['tissues'] = df_eqtl_['tissues'].apply(lambda x: x[:-1]) # Remove last empty element
-    df_eqtl_['tissues'] = df_eqtl_['tissues'].apply(lambda x: stringlist_to_listlist(x))
-
-    # Remove initial columns
-    df_eqtl_.drop(columns=['a', 'b'], inplace=True)
+    df_eqtl[['chr', 'POS', 'ref', 'alt', 'gen_ref']] = df_eqtl['a'].str.split('_', n=4, expand=True)
+    df_eqtl['POS'] = df_eqtl['POS'].astype(int)
+    df_eqtl['tissues'] = df_eqtl['b'].str.split(';') # Fucks up because there is a ; at the end
+    df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: x[:-1]) # Remove last empty element
+    df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: stringlist_to_listlist(x))
+    # Remove columns
+    df_eqtl.drop(columns=['a', 'b'], inplace=True)
+    df_eqtl.drop(columns=['chr', 'ref', 'alt', 'gen_ref'], inplace=True)
 
     # Join on POS/locus
-    # print(df_snp_.set_index('POS').join(df_eqtl_.set_index('locus'), how='inner')) # returns [], how is that even statisticallly possible?
-    print(pd.merge(df_snp_, df_eqtl_, on="POS"))
-    # print(df_snp_.join(df_eqtl_, on="POS", how="inner", lsuffix='_left', rsuffix='_right'))
-    # print(df_eqtl_.iloc[0]["tissues"])
+    # df_snp_.set_index('POS').join(df_eqtl_.set_index('locus'), how='inner')
+    df_X = pd.merge(df_snp, df_eqtl, on="POS", how="inner")
 
-    # left = df_snp_.filter(['POS', 'ID'], axis=1) # df_snp_[['POS', 'ID']].copy() works too (.copy() not necessary)
-    # right = df_eqtl_.filter(['POS', 'gen_ref'], axis=1)
-    # print(type(left['POS'].iloc[0]))
-    # print(type(right['POS'].iloc[0]))
-    # print(pd.merge(left, right, on='POS'))
-    return
 
-    snp = df_snp['POS']
-    sv = df_snp['SV_ID'].apply(lambda x: int(x.split("_")[1]))
-    min_p = df_snp['P'].min()
-    max_p = df_snp['P'].max()
-    scaled_P = (df_snp['P'] - min_p) / (max_p - min_p)
+    bp_range: int = 10000
 
-    # fig = px.parallel_coordinates(df,
-    #                           dimensions=['POS', 'A1'],
-    #                           color_continuous_scale=px.colors.diverging.Tealrose,
-    #                           color_continuous_midpoint=2)
+    snp = df_X['POS']
+    sv = df_X['SV_ID'].apply(lambda x: int(x.split("_")[1]))
+    min_p = df_X['P'].min()
+    max_p = df_X['P'].max()
+    scaled_P = (df_X['P'] - min_p) / (max_p - min_p)
+
     fig = go.Figure(data=
         go.Parcoords(
-            # line_color=dict(color = df['P'],
-            #        colorscale = 'Electric',
-            #        showscale = True,
-            #        cmin = -4000,
-            #        cmax = -100),
             line_color=scaled_P,
             dimensions = list([
                 dict(range = snp.agg(['min', 'max']),
                     label = 'SNP', values = snp),
+                dict(range = sv.agg(['min', 'max']),
+                    label = 'SV', values = sv),
                 dict(range = sv.agg(['min', 'max']),
                     label = 'SV', values = sv)
             ])
