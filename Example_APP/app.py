@@ -87,8 +87,8 @@ def plotly():
     # Check if there are new inputs or it is still the previous run
     return render_template("plotly.html", plot_plotly=plot_plotly)
 
-# http://127.0.0.1:5000/chr?chr=22&start=0&size=10
-@app.route('/chr')
+# http://127.0.0.1:5000/data/data_snp_sv/chr?chr=22&start=0&size=10
+@app.route('/data/data_snp_sv/chr')
 def chr():
     chrom = request.args.get('chr')
     start = int(request.args.get('start'))
@@ -115,6 +115,14 @@ def chr():
     # with open("./data/data_snp_sv/chr22.allQTLs.TEcopy.tsv", "r") as f:
     #     content = f.read()
     # return Response(content, mimetype="text/plain")
+
+# http://127.0.0.1:5000/data/cytoband?chr=chr22
+@app.route('/data/cytoband')
+def cytoband():
+    df = pd.read_csv('./data/CytobandIdeogram.csv', sep=',')
+    chrom = request.args.get('chr')
+    df = df[df['Chromosome'] == chrom]
+    return Response(df.to_csv(index=False), mimetype="text/plain")
 
 # Run the Flask application
 if __name__ == '__main__':

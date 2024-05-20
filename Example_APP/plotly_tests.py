@@ -57,18 +57,9 @@ def scatter_plot():
     fig.show()
 
 
-def lkajsdf():
-    df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/earthquakes-23k.csv')
-    fig = px.density_mapbox(df, lat='Latitude', lon='Longitude', z='Magnitude', radius=10,
-                            center=dict(lat=0, lon=180), zoom=0,
-                            mapbox_style="open-street-map")
-    fig.show()
+####################################################################################################
+####################################################################################################
 
-
-def jklakk():
-    df_tips = px.data.tips()
-    fig = px.parallel_categories(df_tips, color="size", color_continuous_scale=px.colors.sequential.Inferno)
-    fig.show()
 
 """
 Args:
@@ -95,19 +86,21 @@ def split_tissue(tissue: str) -> list[str]:
 
 # TODO Fix the horribly inconsistent filtering, dropping and everything
 def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
-    # SNPs
+    # SNPs and TEs
     df_snp_ = pd.read_csv('./data/data_snp_sv/chr22.allQTLs.TE.tsv', sep='\t')
     df_snp = df_snp_.filter(['POS', 'P', 'SV_ID'], axis=1)
     # df_snp = df_snp.nlargest(1000, 'P') # .sort_values(by=['P']).head(1000)
 
     # Genes
-    # df_genes = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+    df_genes_ = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+    df_genes = df_genes_[df_genes_['chrom'] == "chr22"]
+    df_genes = df_genes.filter(['name', 'txStart', 'txEnd', '#geneName'])
 
-    # QTLs
+    # # QTLs
     df_eqtl = pd.read_csv('./data/summary_eqtls/chr22_summary_eqtls.txt', sep='\t', names=['a', 'b'])
     # Split initial columns into usable ones
-    df_eqtl[['chr', 'POS', 'ref', 'alt', 'gen_ref']] = df_eqtl['a'].str.split('_', n=4, expand=True)
-    df_eqtl['POS'] = df_eqtl['POS'].astype(int)
+    df_eqtl[['chr', 'locus', 'ref', 'alt', 'gen_ref']] = df_eqtl['a'].str.split('_', n=4, expand=True)
+    df_eqtl['locus'] = df_eqtl['locus'].astype(int)
     df_eqtl['tissues'] = df_eqtl['b'].str.split(';') # Fucks up because there is a ; at the end
     df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: x[:-1]) # Remove last empty element
     df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: stringlist_to_listlist(x))
@@ -116,17 +109,19 @@ def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
     df_eqtl.drop(columns=['chr', 'ref', 'alt', 'gen_ref'], inplace=True)
 
     # Join on POS/locus
-    # df_snp_.set_index('POS').join(df_eqtl_.set_index('locus'), how='inner')
-    df_X = pd.merge(df_snp, df_eqtl, on="POS", how="inner")
+    df_snp_eqtl = df_snp.set_index('POS').join(df_eqtl.set_index('locus'), how='inner')
+    # df_snp_eqtl = pd.merge(df_snp, df_eqtl, on="POS", how="inner")
 
+    print(df_snp_eqtl)
+    return
 
     bp_range: int = 10000
 
-    snp = df_X['POS']
-    sv = df_X['SV_ID'].apply(lambda x: int(x.split("_")[1]))
-    min_p = df_X['P'].min()
-    max_p = df_X['P'].max()
-    scaled_P = (df_X['P'] - min_p) / (max_p - min_p)
+    snp = df_snp_eqtl['POS']
+    sv = df_snp_eqtl['SV_ID'].apply(lambda x: int(x.split("_")[1]))
+    min_p = df_snp_eqtl['P'].min()
+    max_p = df_snp_eqtl['P'].max()
+    scaled_P = (df_snp_eqtl['P'] - min_p) / (max_p - min_p)
 
     fig = go.Figure(data=
         go.Parcoords(
