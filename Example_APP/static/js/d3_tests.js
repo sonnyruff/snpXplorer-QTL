@@ -13,8 +13,8 @@ var svg = d3.select("#my_dataviz")
     .attr("transform",
           "translate(" + margin.left + "," + margin.top + ")");
 
-var chr = 22, start = 0, size = 10
-d3.tsv("/data/data_snp_sv/chr?chr="+chr+"&start="+start+"&size="+size, function(data) {
+var chr = 22, p = 0.000000001, size = 10
+d3.tsv("/data/data_snp_sv/chr?chr="+chr+"&p="+p+"&size="+size, function(data) {
   // X scale and Axis
   var x_snp = d3.scaleLinear()
     // .domain([d3.min(data, (d)=>d.POS), d3.max(data, (d)=>d.POS)])

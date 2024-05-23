@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import pandas as pd
+import csv
 import plotly
 import plotly.graph_objs as go
 import plotly.express as px
@@ -84,20 +86,62 @@ def split_tissue(tissue: str) -> list[str]:
     return ["_".join(arr[:-3]), arr[-3], arr[-2], arr[-1]]
 
 
+def transform_summary_eqtls(df_snp_eqtl, chrom):
+    print("Transforming chromosome " + str(chrom) + " summary eqtls into new format, this may take a while...")
+    # Transform into dict
+    # dict = {}
+    list = []
+    for index, row in df_snp_eqtl.iterrows():
+        for tissue in row['tissues']:
+            # Add values in array after tissue name, index = POS
+            # if tissue[0] not in dict:
+            #     dict[tissue[0]] = [[index, tissue[2]]]
+            # else:
+            #     dict[tissue[0]].append([index, tissue[2]])
+
+            # Add values all under eachother
+            list.append(str(chrom)+","+str(tissue[0])+","+str(index)+","+str(tissue[2]))
+
+    # Transform into DataFrame
+    # df = pd.DataFrame(columns=['tissue', 'val'])
+    # for index, row in df_snp_eqtl.iterrows():
+    #     for tissue in row['tissues']:
+    #         if tissue[0] not in dict:
+    #             # dict[tissue[0]] = [index, tissue[2]]
+    #             df = df._append({'tissue':tissue[0], 'val':[index, tissue[2]]}, ignore_index=True)
+    #         else:
+
+    # df = pd.DataFrame.from_dict(dict, orient='index') # Because df.DataFrame(dict) didn't work. Why am I even transforming it into a DataFrame?
+    # write df to csv file
+    # df.to_csv('./data/summary_eqtls/chr'+chrom+'tissues.csv')
+
+    # write dict to csv file
+    # with open('./data/summary_eqtls/chr'+chrom+'tissues.csv', 'w') as f:
+    #     for key in dict:
+    #         f.write("%s,%s\n"%(key, dict[key]))
+
+    # write list to csv file
+    with open('./data/summary_eqtls/chr'+chrom+'tissues.csv', 'w') as f:
+        for item in list:
+            f.write("%s\n"%item)
+
+
 # TODO Fix the horribly inconsistent filtering, dropping and everything
 def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
+    chrom = 2
+
     # SNPs and TEs
-    df_snp_ = pd.read_csv('./data/data_snp_sv/chr22.allQTLs.TE.tsv', sep='\t')
+    df_snp_ = pd.read_csv('./data/data_snp_sv/chr'+str(chrom)+'.allQTLs.TE.txt', sep='\t')
     df_snp = df_snp_.filter(['POS', 'P', 'SV_ID'], axis=1)
     # df_snp = df_snp.nlargest(1000, 'P') # .sort_values(by=['P']).head(1000)
 
     # Genes
     df_genes_ = pd.read_csv('./data/genes_hg38.txt', sep='\t')
-    df_genes = df_genes_[df_genes_['chrom'] == "chr22"]
+    df_genes = df_genes_[df_genes_['chrom'] == "chr"+str(chrom)]
     df_genes = df_genes.filter(['name', 'txStart', 'txEnd', '#geneName'])
 
-    # # QTLs
-    df_eqtl = pd.read_csv('./data/summary_eqtls/chr22_summary_eqtls.txt', sep='\t', names=['a', 'b'])
+    # QTLs
+    df_eqtl = pd.read_csv('./data/summary_eqtls/chr'+str(chrom)+'_summary_eqtls.txt', sep='\t', names=['a', 'b'])
     # Split initial columns into usable ones
     df_eqtl[['chr', 'locus', 'ref', 'alt', 'gen_ref']] = df_eqtl['a'].str.split('_', n=4, expand=True)
     df_eqtl['locus'] = df_eqtl['locus'].astype(int)
@@ -110,9 +154,18 @@ def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
 
     # Join on POS/locus
     df_snp_eqtl = df_snp.set_index('POS').join(df_eqtl.set_index('locus'), how='inner')
+    # df_snp_eqtl = df_snp_eqtl.head(100)
     # df_snp_eqtl = pd.merge(df_snp, df_eqtl, on="POS", how="inner")
 
+
+
+    
     print(df_snp_eqtl)
+
+    if not os.path.exists('./data/summary_eqtls/chr'+str(chrom)+'tissues.csv'):
+        transform_summary_eqtls(df_snp_eqtl, str(chrom))
+
+
     return
 
     bp_range: int = 10000
@@ -139,4 +192,13 @@ def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
     fig.show()
 
 
+def test():
+    # load data into df
+    df = pd.read_csv('./data/summary_eqtls/chr2tissues.csv', sep=',', names=['chrom', 'tissue', 'POS', 'val'])
+    df = df[df['tissue'] == 'Whole_Blood']
+    print(df)
+    # print(df['tissue'].unique())
+
+
 parallel_plot()
+# test()

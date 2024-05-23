@@ -17,13 +17,35 @@
         <form id="exploration_form" method="post">
             <!-- Reference genome -->
             <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; width: 45%; float:left">
-                <h4 style="margin-bottom:0">Reference Genome</h4>
+                <!-- <h4 style="margin-bottom:0">Reference Genome</h4>
                 <input type="radio" name="refGenome" id="GRCh37" value="GRCh37" checked> GRCh37 </input>
-                <input type="radio" name="refGenome" id="GRCh38" value="GRCh38" > GRCh38 </input><br>
-                <h4 style="margin-bottom:0">Cis/Trans</h4>
-                <label><input type="radio" name="isomer" value="cis"> cis</label>
-                <label><input type="radio" name="isomer" value="trans"> trans</label>
-                <label><input type="radio" name="isomer" value="cis_trans"> cis & trans</label><br>
+                <input type="radio" name="refGenome" id="GRCh38" value="GRCh38" > GRCh38 </input><br> -->
+                <h4 style="margin-bottom:0">Chromosome</h4>
+                <select name="chromosome" id="chromosome">
+                    <option value="chr1">Chromosome 1</option>
+                    <option value="chr2">Chromosome 2</option>
+                    <option value="chr3">Chromosome 3</option>
+                    <option value="chr4">Chromosome 4</option>
+                    <option value="chr5">Chromosome 5</option>
+                    <option value="chr6">Chromosome 6</option>
+                    <option value="chr7">Chromosome 7</option>
+                    <option value="chr8">Chromosome 8</option>
+                    <option value="chr9">Chromosome 9</option>
+                    <option value="chr10">Chromosome 10</option>
+                    <option value="chr11">Chromosome 11</option>
+                    <option value="chr12">Chromosome 12</option>
+                    <option value="chr13">Chromosome 13</option>
+                    <option value="chr14">Chromosome 14</option>
+                    <option value="chr15">Chromosome 15</option>
+                    <option value="chr16">Chromosome 16</option>
+                    <option value="chr17">Chromosome 17</option>
+                    <option value="chr18">Chromosome 18</option>
+                    <option value="chr19">Chromosome 19</option>
+                    <option value="chr20">Chromosome 20</option>
+                    <option value="chr21">Chromosome 21</option>
+                    <option value="chr22">Chromosome 22</option>
+                    <option value="chrX">Chromosome X</option>
+                </select>
                 <h4 style="margin-bottom:0">Tissue</h4>
                 <select name="tissue" id="tissue">
                     <option value="volvo">Whole blood</option>
@@ -51,8 +73,35 @@
             
             <!-- Submit button to start the search -->
             <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; text-align: center">
-                <button style="background-color: #4C837A; color: white">Show region!</button>
+                <button id="submit_button" style="background-color: #4C837A; color: white">Show region!</button>
             </div>
+            
+            <script>
+                document.getElementById("submit_button").addEventListener("click", function(event) {
+                event.preventDefault(); // Prevent the form from submitting
+            
+                // Get the selected radio button values
+                var selectedCheckboxes = document.querySelectorAll('input[name="allGwas"]:checked');
+            
+                // Get the text input value
+                var textInput = document.getElementById("browse_option").value;
+            
+                // Check if at least one checkbox is selected or if the text input is empty
+                if (selectedCheckboxes.length === 0 && textInput.trim() === "") {
+                    // Display an error message
+                    alert("Please select a GWAS dataset to show from the GWAS to include and the region to show from the Browsing options!");
+                } else if (selectedCheckboxes.length === 0) {
+                    // Display an error message
+                    alert("Please select a GWAS dataset to show from the GWAS to include.");
+                } else if (textInput.trim() === "") {
+                    // Display an error message
+                    alert("Please select a region to show from the Browsing options!");
+                } else {
+                    // Submit the form
+                    document.getElementById("exploration_form").submit();
+                }
+                });
+            </script>   
         </form>
 
         <!-- Main Plot -->
