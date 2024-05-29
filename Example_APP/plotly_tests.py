@@ -88,37 +88,12 @@ def split_tissue(tissue: str) -> list[str]:
 
 def transform_summary_eqtls(df_snp_eqtl, chrom):
     print("Transforming chromosome " + str(chrom) + " summary eqtls into new format, this may take a while...")
-    # Transform into dict
-    # dict = {}
     list = []
     for index, row in df_snp_eqtl.iterrows():
         for tissue in row['tissues']:
             # Add values in array after tissue name, index = POS
-            # if tissue[0] not in dict:
-            #     dict[tissue[0]] = [[index, tissue[2]]]
-            # else:
-            #     dict[tissue[0]].append([index, tissue[2]])
-
-            # Add values all under eachother
-            list.append(str(chrom)+","+str(tissue[0])+","+str(index)+","+str(tissue[2]))
-
-    # Transform into DataFrame
-    # df = pd.DataFrame(columns=['tissue', 'val'])
-    # for index, row in df_snp_eqtl.iterrows():
-    #     for tissue in row['tissues']:
-    #         if tissue[0] not in dict:
-    #             # dict[tissue[0]] = [index, tissue[2]]
-    #             df = df._append({'tissue':tissue[0], 'val':[index, tissue[2]]}, ignore_index=True)
-    #         else:
-
-    # df = pd.DataFrame.from_dict(dict, orient='index') # Because df.DataFrame(dict) didn't work. Why am I even transforming it into a DataFrame?
-    # write df to csv file
-    # df.to_csv('./data/summary_eqtls/chr'+chrom+'tissues.csv')
-
-    # write dict to csv file
-    # with open('./data/summary_eqtls/chr'+chrom+'tissues.csv', 'w') as f:
-    #     for key in dict:
-    #         f.write("%s,%s\n"%(key, dict[key]))
+            if float(tissue[3]) < 0.00001:
+                list.append(str(chrom)+","+str(tissue[0])+","+str(tissue[1])+","+str(index)+","+row['ref']+","+row['alt']+","+str(tissue[2])+","+str(tissue[3]))
 
     # write list to csv file
     with open('./data/summary_eqtls/chr'+chrom+'tissues.csv', 'w') as f:
@@ -131,14 +106,16 @@ def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
     chrom = 2
 
     # SNPs and TEs
-    df_snp_ = pd.read_csv('./data/data_snp_sv/chr'+str(chrom)+'.allQTLs.TE.txt', sep='\t')
+    df_snp_ = pd.read_csv('./data/data_snp_sv/chr'+str(chrom)+'.allQTLs.NEWSET.JOIN_size.txt', sep='\t')
     df_snp = df_snp_.filter(['POS', 'P', 'SV_ID'], axis=1)
-    # df_snp = df_snp.nlargest(1000, 'P') # .sort_values(by=['P']).head(1000)
+    df_snp['svStart'] = df_snp['SV_ID'].apply(lambda x: x.split(':')[1].split('-')[0])
+    df_snp['svEnd'] = df_snp['SV_ID'].apply(lambda x: x.split('-')[1].split('_')[0])
+    df_snp.drop(columns=['SV_ID'], inplace=True)
 
     # Genes
-    df_genes_ = pd.read_csv('./data/genes_hg38.txt', sep='\t')
-    df_genes = df_genes_[df_genes_['chrom'] == "chr"+str(chrom)]
-    df_genes = df_genes.filter(['name', 'txStart', 'txEnd', '#geneName'])
+    # df_genes_ = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+    # df_genes = df_genes_[df_genes_['chrom'] == "chr"+str(chrom)]
+    # df_genes = df_genes.filter(['name', 'txStart', 'txEnd', '#geneName'])
 
     # QTLs
     df_eqtl = pd.read_csv('./data/summary_eqtls/chr'+str(chrom)+'_summary_eqtls.txt', sep='\t', names=['a', 'b'])
@@ -150,24 +127,20 @@ def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
     df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: stringlist_to_listlist(x))
     # Remove columns
     df_eqtl.drop(columns=['a', 'b'], inplace=True)
-    df_eqtl.drop(columns=['chr', 'ref', 'alt', 'gen_ref'], inplace=True)
+    df_eqtl.drop(columns=['chr', 'gen_ref'], inplace=True)
 
     # Join on POS/locus
     df_snp_eqtl = df_snp.set_index('POS').join(df_eqtl.set_index('locus'), how='inner')
-    # df_snp_eqtl = df_snp_eqtl.head(100)
-    # df_snp_eqtl = pd.merge(df_snp, df_eqtl, on="POS", how="inner")
 
-
-
-    
     print(df_snp_eqtl)
 
-    if not os.path.exists('./data/summary_eqtls/chr'+str(chrom)+'tissues.csv'):
-        transform_summary_eqtls(df_snp_eqtl, str(chrom))
+    # if not os.path.exists('./data/summary_eqtls/chr'+str(chrom)+'tissues.csv'):
+    #     transform_summary_eqtls(df_snp_eqtl, str(chrom))
 
 
     return
 
+    #region
     bp_range: int = 10000
 
     snp = df_snp_eqtl['POS']
@@ -190,13 +163,17 @@ def parallel_plot(): # https://plotly.com/python/parallel-coordinates-plot/
         )
     )
     fig.show()
+    #endregion
 
 
 def test():
     # load data into df
     df = pd.read_csv('./data/summary_eqtls/chr2tissues.csv', sep=',', names=['chrom', 'tissue', 'POS', 'val'])
+    print(len(df))
     df = df[df['tissue'] == 'Whole_Blood']
-    print(df)
+    print(len(df))
+    print(len(df['POS'].unique()))
+    # print(df)
     # print(df['tissue'].unique())
 
 

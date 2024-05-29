@@ -21,7 +21,7 @@
                 <input type="radio" name="refGenome" id="GRCh37" value="GRCh37" checked> GRCh37 </input>
                 <input type="radio" name="refGenome" id="GRCh38" value="GRCh38" > GRCh38 </input><br> -->
                 <h4 style="margin-bottom:0">Chromosome</h4>
-                <select name="chromosome" id="chromosome">
+                <select name="chrom" id="chrom">
                     <option value="chr1">Chromosome 1</option>
                     <option value="chr2">Chromosome 2</option>
                     <option value="chr3">Chromosome 3</option>
@@ -47,13 +47,36 @@
                     <option value="chrX">Chromosome X</option>
                 </select>
                 <h4 style="margin-bottom:0">Tissue</h4>
-                <select name="tissue" id="tissue">
-                    <option value="volvo">Whole blood</option>
-                    <option value="saab">Skim blood</option>
-                    <option value="mercedes">0 fat blood</option>
-                    <option value="audi">Skin</option>
-                </select>
+                <select name="tissue" id="tissue" multiple></select>
             </div>
+
+            <script>
+                var tissues = ['Cells_Cultured_fibroblasts', 'Heart_Atrial_Appendage',
+                    'Brain_Hypothalamus', 'Stomach', 'Esophagus_Muscularis', 'Pancreas',
+                    'Muscle_Skeletal', 'Heart_Left_Ventricle', 'Whole_Blood', 'Artery_Tibial',
+                    'Brain_Caudate_basal_ganglia', 'Brain_Hippocampus',
+                    'Brain_Putamen_basal_ganglia', 'Testis', 'Brain_Cortex', 'Lung',
+                    'Adipose_Subcutaneous', 'Artery_Aorta', 'Artery_Coronary', 'Colon_Sigmoid',
+                    'Colon_Transverse', 'Esophagus_Mucosa', 'Nerve_Tibial', 'Pituitary',
+                    'Prostate', 'Skin_Not_Sun_Exposed_Suprapubic', 'Skin_Sun_Exposed_Lower_leg',
+                    'Spleen', 'Thyroid', 'Adipose_Visceral_Omentum',
+                    'Brain_Cerebellar_Hemisphere', 'Brain_Cerebellum',
+                    'Brain_Frontal_Cortex_BA9', 'Breast_Mammary_Tissue',
+                    'Esophagus_Gastroesophageal_Junction', 'Adrenal_Gland',
+                    'Small_Intestine_Terminal_Ileum', 'Vagina', 'Minor_Salivary_Gland', 'Liver',
+                    'Cells_EBV-transformed_lymphocytes', 'Ovary', 
+                    'Brain_Spinal_cord_cervical_c-1', 'Kidney_Cortex',
+                    'Brain_Nucleus_accumbens_basal_ganglia',
+                    'Brain_Anterior_cingulate_cortex_BA24', 'Uterus', 'Brain_Amygdala',
+                    'Brain_Substantia_nigra']
+                var tissue_box = document.getElementById("tissue");
+                for (var i = 0; i < tissues.length; i++) {
+                    var option = document.createElement("option");
+                    option.value = tissues[i];
+                    option.text = tissues[i];
+                    tissue_box.appendChild(option);
+                }
+            </script>
 
             <!-- Browsing option -->
             <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; width: 45%; float:left">
@@ -65,7 +88,8 @@
                         font-size: 16px; /* Adjust the font size as needed */
                     }
                 </style>
-                Locus/Interval/RsID/Gene <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br> 
+                <!-- Locus/Interval/RsID/Gene <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br>  -->
+                Locus <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br> 
                 Window <input type="range" min="1000" max="250000" value="{{ request.form.get('window', '25000') }}" step="1000" name="window" oninput="updateValue(this.value)">
                 <p>Current value: <span id="slider-value">{{ request.form.get('window', '25000') }}</span></p>
                 <!-- <small style="color: blue;">Example: 1:1000000 / 1:1000000-1200000 / APOE / rs7412</small> -->
@@ -78,28 +102,19 @@
             
             <script>
                 document.getElementById("submit_button").addEventListener("click", function(event) {
-                event.preventDefault(); // Prevent the form from submitting
-            
-                // Get the selected radio button values
-                var selectedCheckboxes = document.querySelectorAll('input[name="allGwas"]:checked');
-            
-                // Get the text input value
-                var textInput = document.getElementById("browse_option").value;
-            
-                // Check if at least one checkbox is selected or if the text input is empty
-                if (selectedCheckboxes.length === 0 && textInput.trim() === "") {
-                    // Display an error message
-                    alert("Please select a GWAS dataset to show from the GWAS to include and the region to show from the Browsing options!");
-                } else if (selectedCheckboxes.length === 0) {
-                    // Display an error message
-                    alert("Please select a GWAS dataset to show from the GWAS to include.");
-                } else if (textInput.trim() === "") {
-                    // Display an error message
-                    alert("Please select a region to show from the Browsing options!");
-                } else {
-                    // Submit the form
+                    event.preventDefault(); // Prevent the form from submitting
                     document.getElementById("exploration_form").submit();
-                }
+
+                    // TODO: Fix
+                    // var selectedCheckboxes = document.querySelectorAll('input[name="allGwas"]:checked');
+                    // var textInput = document.getElementById("browse_option").value;
+                    // if (selectedCheckboxes.length === 0) {
+                    //     alert("Please select a GWAS dataset to show from the GWAS to include.");
+                    // } else if (textInput.trim() === "") {
+                    //     alert("Please select a region to show from the Browsing options!");
+                    // } else {
+                    //     document.getElementById("exploration_form").submit();
+                    // }
                 });
             </script>   
         </form>

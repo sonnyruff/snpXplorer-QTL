@@ -2,38 +2,32 @@ import { embed } from 'gosling.js';
 
 
 const chrom = 2,
-  locus = 15000000,
-  range = 1000000,
+  // locus = 13900000,
+  // range = 100000,
+  locus = 24700000,
+  range = 300000,
   p_val = 0.000000001,
   start = locus-range,
   end = locus+range,
-  // tissues = ["Whole_Blood", "Stomach"];
-  tissue = "Whole_Blood"
+  tissues = ["Whole_Blood", "Stomach"];
+  // tissues = ["Whole_Blood"];
+  // tissue = "Whole_Blood"
 
 
 const width = 1500,
-    bandHeight = 16,
+    bandHeight = 30,
     linkHeight = 100;
 
-const data = {
-    type: 'csv',
-    url: 'https://raw.githubusercontent.com/sehilyi/gemini-datasets/master/data/circos-segdup-edited.txt',
-    chromosomeField: 'c2',
-    genomicFields: ['s1', 'e1', 's2', 'e2']
+//==================================================================
+
+const snp_sv_data = {
+  "url": "/data/data_snp_sv?chr="+chrom+"&p="+p_val+"&start="+start+"&end="+end,
+  "type": "csv",
+  "chromosomeField": "#CHROM",
+  "genomicFields": ["POS", "svStart", "svEnd"],
+  "separator": ","
 };
 
-
-const snps = {
-  width,
-  height: 70,
-  data: {
-    // url: "https://raw.githubusercontent.com/sehilyi/gemini-datasets/master/data/UCSC.HG38.Human.CytoBandIdeogram.csv",
-    url: "/data/cytoband?chr=chr"+chrom,
-    type: "csv",
-    chromosomeField: "Chromosome",
-    genomicFields: ["chromStart", "chromEnd"]
-  },
-}
 
 //==================================================================
 
@@ -47,11 +41,11 @@ const snps = {
 //==================================================================
 
 const genomeTrack = {
+  title: 'G-bands',
   width,
-  height: 70,
+  height: bandHeight,
   data: {
-    // url: "https://raw.githubusercontent.com/sehilyi/gemini-datasets/master/data/UCSC.HG38.Human.CytoBandIdeogram.csv",
-    url: "/data/cytoband?chr=chr"+chrom,
+    url: "https://raw.githubusercontent.com/sehilyi/gemini-datasets/master/data/UCSC.HG38.Human.CytoBandIdeogram.csv",
     type: "csv",
     chromosomeField: "Chromosome",
     genomicFields: ["chromStart", "chromEnd"]
@@ -67,13 +61,9 @@ const genomeTrack = {
   //          "range": ["#D9D9D9","#979797","#636363", "black"]
   //      },
   //***  
-  x: {
-    field: "chromStart",
-    type: "genomic",
-    axis: "top"
-  },
+  x: { field: "chromStart", type: "genomic" },
   xe: { "field": "chromEnd", "type": "genomic" },
-  size: { "value": 20 },
+  size: { "value": bandHeight },
   stroke: { "value": "gray" },
   strokeWidth: { "value": 0.5 },
 
@@ -219,56 +209,174 @@ const geneTrack = {
 
 //==================================================================
 
-/**
- * @param {string} x
- * @param {string} xe
- * @returns {Track}
- */
-const getRectTrack = (x, xe) => {
-    return {
-        data,
-        mark: 'rect',
-        x: { field: x, type: 'genomic' },
-        xe: { field: xe, type: 'genomic' },
-        stroke: { value: '#4C6629' },
-        strokeWidth: { value: 0.8 },
-        tooltip: [
-            { field: x, type: 'genomic', alt: '<b style="color:green">Start Position</b>' },
-            { field: xe, type: 'genomic', alt: '<b style="color:green">End Position</b>' }
-        ],
-        opacity: { value: 0.15 },
-        color: { value: '#85B348' },
-        width,
-        height: bandHeight
-    };
-};
+const get_tissue_track = (chrom, tissue, start, end) => {
+  return {
+    title: tissue,
+    data: {
+      url: "/data/summary_eqtls?chr="+chrom+"&tissue="+tissue+"&start="+start+"&end="+end+"&p="+p_val,
+      type: "csv",
+      chromosomeField: '#CHROM',
+      genomicFields: ["POS"],
+      separator: ","
+    },
+    mark: "point",
+    x: {"field": "POS", "type": "genomic"},
+    y: {"field": "P", "type": "quantitative"},
+    // color: {"field": "val", "type": "quantitative"},
+    width,
+    height: 60,
+    "tooltip": [
+      {"field": "POS", "type": "genomic", "alt": "Locus"},
+      {"field": "P", "type": "nominal", "alt": "P"},
+      {"field": "val", "type": "nominal", "alt": "val"},
+      {"field": "gene", "type": "nominal", "alt": "Gene"},
+      {"field": "ref", "type": "nominal", "alt": "Ref"},
+      {"field": "alt", "type": "nominal", "alt": "Alt"}
+    ]
+  }
+}
 
-/**
- * @param {string} x
- * @param {string} xe
- * @param {string} x1
- * @param {string} x1e
- * @returns {Track}
- */
-const getBetweenLinkTrack = (x, xe, x1, x1e) => {
-    return {
-        data,
+const get_tissue_between_track = (chrom, tissue, start, end) => {
+  return { // ===== LinkBetweens =====
+    data: {
+      url: "/data/summary_eqtls?chr="+chrom+"&tissue="+tissue+"&start="+start+"&end="+end+"&p="+p_val,
+      type: "csv",
+      chromosomeField: '#CHROM',
+      genomicFields: ["POS", "txStart"],
+      separator: ","
+    },
+    mark: 'betweenLink',
+    x: { field: 'txStart', type: 'genomic' },
+    x1: { field: 'POS', type: 'genomic' },
+    stroke: { value: '#4C6629' },
+    strokeWidth: { value: 0.8 },
+    opacity: {"field": "P", "type": "quantitative"},
+    color: { value: '#85B348' },
+    style: { outlineWidth: 0, linkConnectionType: 'curve' },
+    width,
+    height: linkHeight
+  }
+}
+
+const get_main_view = () => {
+  const view = {
+    "layout": "linear",
+    "xDomain": {"chromosome": "chr"+chrom, "interval": [start, end]},
+    "spacing": 0,
+    "tracks": [
+      genomeTrack,
+      { // ===== SNP P-values =====
+        data: snp_sv_data,
+        mark: "bar",
+        x: {"field": "POS", "type": "genomic"},
+        y: {"field": "P", "type": "quantitative"},
+        // color: {"field": "sample", "type": "nominal"},
+        color: {value: "grey"},
+        width,
+        height: 60
+      },
+      { // ===== Bases =====
+        "layout": "linear",
+        "alignment": "overlay",
+        "data": {
+          "url": "https://server.gosling-lang.org/api/v1/tileset_info/?d=sequence-multivec",
+          "type": "multivec",
+          "row": "base",
+          "column": "position",
+          "value": "count",
+          "categories": ["A", "T", "G", "C"],
+          "start": "start",
+          "end": "end"
+        },
+        "tracks": [
+          {
+            "mark": "bar",
+            "y": {"field": "count", "type": "quantitative", "axis": "none"}
+          },
+          {
+            "dataTransform": [
+              {"type": "filter", "field": "count", "oneOf": [0], "not": true}
+            ],
+            "mark": "text",
+            "x": {"field": "start", "type": "genomic"},
+            "xe": {"field": "end", "type": "genomic"},
+            "size": {"value": 12},
+            "color": {"value": "white"},
+            "visibility": [
+              {
+                "operation": "less-than",
+                "measure": "width",
+                "threshold": "|xe-x|",
+                "transitionPadding": 30,
+                "target": "mark"
+              },
+              {
+                "operation": "LT",
+                "measure": "zoomLevel",
+                "threshold": 40,
+                "target": "track"
+              }
+            ]
+          }
+        ],
+        "x": {"field": "position", "type": "genomic"},
+        "color": {
+          "field": "base",
+          "type": "nominal",
+          "domain": ["A", "T", "G", "C"],
+          "legend": true
+        },
+        "text": {"field": "base", "type": "nominal"},
+        "style": {"textFontWeight": "bold"},
+        "width": width,
+        "height": bandHeight
+      },
+      { // ===== SNPs =====
+        data: snp_sv_data,
+        mark: "rect",
+        "x": {"field": "POS", "type": "genomic"},
+        // "y": {"field": "P", "type": "quantitative"},
+        "color": {"value": "grey"},
+        "width": width,
+        "height": bandHeight
+      },
+      { // ===== LinkBetweens =====
+        data: snp_sv_data,
         mark: 'betweenLink',
-        x: { field: x, type: 'genomic' },
-        xe: { field: xe, type: 'genomic' },
-        x1: { field: x1, type: 'genomic' },
-        x1e: { field: x1e, type: 'genomic' },
+        x: { field: 'POS', type: 'genomic' },
+        // xe: { field: 'POS', type: 'genomic' }, // These break it
+        x1: { field: 'svStart', type: 'genomic' },
+        // x1e: { field: 'svEnd', type: 'genomic' }, // These break it
         stroke: { value: '#4C6629' },
         strokeWidth: { value: 0.8 },
-        opacity: { value: 0.15 },
+        opacity: {"field": "P", "type": "quantitative"},
         color: { value: '#85B348' },
-        style: { outlineWidth: 0 },
+        style: { outlineWidth: 0, linkConnectionType: 'curve' },
         width,
         height: linkHeight
-    };
+      },
+      { // ===== SVs =====
+        "data": snp_sv_data,
+        "mark": "rect",
+        "x": {"field": "svStart", "type": "genomic"},
+        "xe": {"field": "svEnd", "type": "genomic"},
+        "color": {"value": "grey"},
+        "width": width,
+        "height": bandHeight
+      },
+      geneTrack
+    ]
+  };
+
+  // This might've just been able to be put under the spec object below
+  for(let i = 0; i < tissues.length; i++){
+    view["tracks"].push(get_tissue_between_track(chrom, tissues[i], start, end))
+    view["tracks"].push(get_tissue_track(chrom, tissues[i], start, end))
+  }
+
+  return view;
 };
 
-//==================================================================
 
 /**
  * @returns {GoslingSpec}
@@ -282,160 +390,17 @@ const spec = {
   xDomain: { chromosome: "chr"+chrom, "interval": [start, end] },
   views: [
     {
-      tracks: [
-        // getTissueTrack,
-        {
-          title: tissue,
-          data: {
-            url: "/data/summary_eqtls?chr="+chrom+"&tissue="+tissue+"&start="+start+"&end="+end,
-            type: "csv",
-            chromosomeField: 'chrom',
-            genomicFields: ["POS"],
-            separator: ","
-          },
-          mark: "point",
-          x: {"field": "POS", "type": "genomic"},
-          y: {"field": "val", "type": "quantitative"},
-          color: {value: "grey"},
-          width,
-          height: 60
-        },
-        {
-          data: {
-            // url: "/data/data_snp_sv/chr?chr="+chrom+"&p="+p_val+"&size=1000",
-            url: "/data/data_snp_sv/chr?chr="+chrom+"&p="+p_val+"&start="+start+"&end="+end,
-            type: "csv",
-            chromosomeField: "#CHROM",
-            genomicFields: ["POS"],
-            separator: ","
-          },
-          mark: "point",
-          x: {"field": "POS", "type": "genomic"},
-          y: {"field": "P", "type": "quantitative"},
-          // color: {"field": "sample", "type": "nominal"},
-          color: {value: "grey"},
-          width,
-          height: 60
-        },
-        {
-          "data": {
-            "url": "https://server.gosling-lang.org/api/v1/tileset_info/?d=cistrome-multivec",
-            "type": "multivec",
-            "row": "sample",
-            "column": "position",
-            "value": "peak",
-            "categories": ["sample 1", "sample 2", "sample 3", "sample 4"]
-          },
-          "mark": "area",
-          "x": {"field": "position", "type": "genomic"},
-          "y": {"field": "peak", "type": "quantitative"},
-          "color": {"field": "sample", "type": "nominal"},
-          width,
-          height: 30
-        },
-        {
-          "alignment": "overlay",
-          "data": {
-            "url": "https://raw.githubusercontent.com/sehilyi/gemini-datasets/master/data/cytogenetic_band.csv",
-            "type": "csv",
-            "chromosomeField": "Chr.",
-            "genomicFields": [
-              "ISCN_start",
-              "ISCN_stop",
-              "Basepair_start",
-              "Basepair_stop"
-            ]
-          },
-          "tracks": [
-            {
-              "mark": "text",
-              "dataTransform": [
-                {
-                  "type": "filter",
-                  "field": "Stain",
-                  "oneOf": ["acen-1", "acen-2"],
-                  "not": true
-                }
-              ],
-              "text": {"field": "Band", "type": "nominal"},
-              "color": {"value": "black"},
-              "visibility": [
-                {
-                  "operation": "less-than",
-                  "measure": "width",
-                  "threshold": "|xe-x|",
-                  "transitionPadding": 10,
-                  "target": "mark"
-                }
-              ]
-            },
-            {
-              "mark": "rect",
-              "dataTransform": [
-                {
-                  "type": "filter",
-                  "field": "Stain",
-                  "oneOf": ["acen-1", "acen-2"],
-                  "not": true
-                }
-              ],
-              "color": {
-                "field": "Density",
-                "type": "nominal",
-                "domain": ["", "25", "50", "75", "100"],
-                "range": ["white", "#D9D9D9", "#979797", "#636363", "black"]
-              }
-            },
-            {
-              "mark": "rect",
-              "dataTransform": [
-                {"type": "filter", "field": "Stain", "oneOf": ["gvar"]}
-              ],
-              "color": {"value": "#A0A0F2"}
-            },
-            {
-              "mark": "triangleRight",
-              "dataTransform": [
-                {"type": "filter", "field": "Stain", "oneOf": ["acen-1"]}
-              ],
-              "color": {"value": "#B40101"}
-            },
-            {
-              "mark": "triangleLeft",
-              "dataTransform": [
-                {"type": "filter", "field": "Stain", "oneOf": ["acen-2"]}
-              ],
-              "color": {"value": "#B40101"}
-            }
-          ],
-          "x": {"field": "Basepair_start", "type": "genomic"},
-          "xe": {"field": "Basepair_stop", "type": "genomic"},
-          "stroke": {"value": "gray"},
-          "strokeWidth": {"value": 0.5},
-          width,
-          height: 20
-        }
-      ]
-    },
-    {
       static: true,
       xDomain: { chromosome: "chr"+chrom},
       tracks: [
         genomeTrack
       ]
     },
-    {tracks: [geneTrack]},
-    {
-      layout: 'linear',
-      spacing: 0,
-      tracks: [
-          getRectTrack('s1', 'e1'),
-          getBetweenLinkTrack('s1', 'e1', 's2', 'e2'),
-          getRectTrack('s2', 'e2')
-      ]
-    }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    get_main_view()
   ]
 };
+
 
 
 // var e = document.getElementById("chromosome");

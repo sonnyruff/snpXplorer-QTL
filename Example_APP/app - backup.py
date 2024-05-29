@@ -17,10 +17,11 @@ import plotly.graph_objs as go
 
 # Misc
 from io import BytesIO
-from io import StringIO
 import base64
+import json
 import numpy as np
 import math
+import datetime
 
 # Other scripts
 from matplotlib_tests import *
@@ -282,7 +283,7 @@ def summary_eqtls():
 
     # Load datasets and join during query
     # SVs
-    print("Loading data_snp_sv chromosome" + str(chrom))
+    print("Loading SVs")
     df_snp = pd.read_csv('./data/data_snp_sv/chr'+str(chrom)+'.allQTLs.NEWSET.JOIN_size.txt', sep='\t')
     df_snp = df_snp.filter(['POS', 'P', 'SV_ID'], axis=1)
     df_snp['svStart'] = df_snp['SV_ID'].apply(lambda x: x.split(':')[1].split('-')[0])
@@ -290,7 +291,7 @@ def summary_eqtls():
     df_snp.drop(columns=['SV_ID'], inplace=True)
     df_snp = df_snp[(df_snp['POS'].values >= start) & (df_snp['POS'].values <= end)]
     # QTLs
-    print("Loading summary_eqtls chromosome" + str(chrom))
+    print("Loading QTLs")
     df_eqtl = pd.read_csv('./data/summary_eqtls/chr'+str(chrom)+'_summary_eqtls.txt', sep='\t', names=['a', 'b'])
     df_eqtl[['chr', 'locus', 'ref', 'alt', 'gen_ref']] = df_eqtl['a'].str.split('_', n=4, expand=True) # Split initial columns into usable ones
     df_eqtl['locus'] = df_eqtl['locus'].astype(int)
@@ -299,43 +300,26 @@ def summary_eqtls():
     df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: stringlist_to_listlist(x))
     df_eqtl.drop(columns=['a', 'b'], inplace=True)
     df_eqtl.drop(columns=['chr', 'gen_ref'], inplace=True)
+    # Genes
+    print("Loading Genes")
+    df_genes = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+    df_genes = df_genes[df_genes['chrom'] == "chr"+str(chrom)]
+    df_genes = df_genes.filter(['name', 'txStart', 'txEnd', '#geneName'])
     # Join on POS/locus
     print("Joining")
     df_snp_eqtl = df_snp.set_index('POS').join(df_eqtl.set_index('locus'), how='inner')
 
     print("Transforming")
-    # list = ["#CHROM,tissue,gene,POS,ref,alt,val,P\n"]
-    list = []
+    list = ["#CHROM,tissue,gene,POS,ref,alt,val,P\n"]
     for index, row in df_snp_eqtl.iterrows():
         for trow in row['tissues']:
             # Add values in array after tissue name, index = POS
             if str(trow[0]) == tissue and float(trow[3]) < p_val:
                 p_new = -math.log10(float(trow[3]))
                 list.append(str(chrom)+","+str(trow[0])+","+str(trow[1])+","+str(index)+","+row['ref']+","+row['alt']+","+str(trow[2])+","+str(p_new)+"\n")
-    
-    # list to df
-    print("Converting")
-    df = pd.read_csv(StringIO(''.join(list)), sep=',', names=['#CHROM', 'tissue', 'ens', 'POS', 'ref', 'alt', 'val', 'P'])
-    # print(df)
-
-    # Ensemble to GeneName
-    print("Loading Ensemble_to_GeneName")
-    df_ens2gene = pd.read_csv('./data/Ensemble_to_GeneName.txt', sep='\t', names=['ens', 'gene'])
-    df = df.set_index('ens').join(df_ens2gene.set_index('ens'), how='inner')
-    df.reset_index(inplace=True)
-    # print(df)
-    # df.drop(columns=['ens'], inplace=True)
-    # Genes
-    print("Loading Genes")
-    df_genes = pd.read_csv('./data/genes_hg38.txt', sep='\t')
-    df_genes = df_genes[df_genes['chrom'] == "chr"+str(chrom)]
-    df_genes = df_genes.filter(['name', 'txStart', 'txEnd', '#geneName'])
-    df = df.set_index('gene').join(df_genes.set_index('#geneName'), how='inner')
-    df.reset_index(inplace=True)
-    # print(df)
 
     print("Sending")
-    return Response(df.to_csv(index=False), mimetype="text/plain")
+    return Response(list, mimetype="text/plain")
 
 
 # Run the Flask application
