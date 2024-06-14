@@ -1,26 +1,29 @@
-# Flask
-from flask import Flask, request, render_template, send_file, session, make_response, redirect, url_for, jsonify, Response
-from flask_session import Session
+""" 
+Flask app for snpXplorer QTLs
 
-# Data
-import pandas as pd
-import csv
-
-# Graphing
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import plotly
-from plotly.utils import PlotlyJSONEncoder
-import plotly.io as pio
-import plotly.graph_objs as go
+To run the script:
+    ./.venv/Scripts/activate
+    flask run
+"""
 
 # Misc
 from io import BytesIO
 from io import StringIO
 import base64
-import numpy as np
 import math
+import numpy as np
+
+# Flask
+from flask import Flask, request, render_template, session, Response
+
+# Data
+import pandas as pd
+
+# Graphing
+import matplotlib
+import matplotlib.pyplot as plt
+import plotly.io as pio
+import plotly.graph_objs as go
 
 # Other scripts
 from matplotlib_tests import *
@@ -28,6 +31,8 @@ from app_functions import *
 
 ######################################################################
 ######################################################################
+
+matplotlib.use('Agg')
 
 # Set path to data
 data_path = '/Data'
@@ -86,19 +91,24 @@ def plotly_plot():
 
 # Define a route for one page
 @app.route('/', methods=["GET", "POST"])
-def example():
+def example_page():
     if request.method == "POST":
         print("POST")
         chrom = request.form["chrom"]
         # refGen = request.form["refGenome"]
-        browse = int(request.form["browse"])
+        locus = int(request.form["browse"])
         # gwas = request.form.getlist('gwas_data')
-        window = int(request.form["window"])
+        range = int(request.form["window"])
         # selected_sv_source = request.form.getlist("sv_source")
         # recomb = request.form["recomb"]
         # exons = request.form["exons"]
         # plotype = request.form["plotype"]
         # qtl_tissues = request.form.getlist('QTLtissuesExplo')
+        p_val = float(request.form["p_val"])
+        tissues = request.form.getlist('tissue')
+
+        start = locus-range/2
+        end = locus+range/2
 
         print(request.form)
         print(session)
@@ -138,8 +148,8 @@ def example():
         # session['svs_df'] = svs_df.to_csv(index=False)
         # session['gwascat_df'] = gwascat_df.to_csv(index=False)
         session['chrom'] = chrom
-        session['start_pos'] = browse-window/2
-        session['end_pos'] = browse+window/2
+        session['start_pos'] = start
+        session['end_pos'] = end
         # session['gwas'] = gwas
         # session['genes'] = genes
         # session['svs'] = svs
@@ -152,7 +162,7 @@ def example():
 
         # return the html template and the url to the plot
         # return render_template("exploration.html", plot_url=plot_url, plot_gtex=plot_gtex, table_snps=snps_table, table_svs=svs_table, table_gwas=gwas_table, browse_value=browse, gwas=gwas)
-        return render_template("example.html")
+        return render_template("example.html", chrom=chrom, locus=locus, start=start, end=end, p_val=p_val, tissues=tissues)
     
     elif 'df' in session:
         print("df")
@@ -166,7 +176,7 @@ def example():
         # refGen = session['refGen']
         # recomb_data = session['recomb_data']
         # exons = session['exons']
-        browse = session['browse']
+        locus = session['browse']
         # plotype = session['plotype']
         # df = pd.read_csv(StringIO(session.get('df')))
         # gtex_df = pd.read_csv(StringIO(session.get('gtex_df')))
@@ -205,9 +215,9 @@ def example():
         # return render_template("example.html", plot_url=plot_base64)
         return render_template("example.html")
 
-
+# http://127.0.0.1:5000/plotly
 @app.route('/plotly/', methods=["GET", "POST"])
-def plotly():
+def plotly_page():
     # fetch data
     # ...
     # plot data
@@ -218,12 +228,12 @@ def plotly():
 
 # http://127.0.0.1:5000/data/data_snp_sv?chr=22&start=14000000&end=16000000&p=0.00000001
 @app.route('/data/data_snp_sv')
-def chr():
+def get_chromosome_data():
     chrom = request.args.get('chr')
     p_val = float(request.args.get('p'))
     # size = int(request.args.get('size'))
-    start = int(request.args.get('start'))
-    end = int(request.args.get('end'))
+    start = int(float(request.args.get('start')))
+    end = int(float(request.args.get('end')))
 
     #region --- Failed storing data ---
     # global route_args
@@ -265,13 +275,13 @@ def chr():
     return Response(df.to_csv(index=False), mimetype="text/plain")
 
 
-# http://127.0.0.1:5000/data/summary_eqtls?chr=2&tissue=Whole_Blood&start=14000000&end=16000000&p=0.00000001
+# http://127.0.0.1:5000/data/summary_eqtls?chr=2&tissue=Whole_Blood&start=24400000&end=25000000&p=0.00000001
 @app.route('/data/summary_eqtls')
 def summary_eqtls():
     chrom = request.args.get('chr')
     tissue = request.args.get('tissue')
-    start = int(request.args.get('start'))
-    end = int(request.args.get('end'))
+    start = int(float(request.args.get('start')))
+    end = int(float(request.args.get('end')))
     p_val = float(request.args.get('p'))
 
     # Read from pre-gen file
@@ -284,6 +294,7 @@ def summary_eqtls():
     # SVs
     print("Loading data_snp_sv chromosome" + str(chrom))
     df_snp = pd.read_csv('./data/data_snp_sv/chr'+str(chrom)+'.allQTLs.NEWSET.JOIN_size.txt', sep='\t')
+    # print("df_snp : %s" % str(df_snp.shape))
     df_snp = df_snp.filter(['POS', 'P', 'SV_ID'], axis=1)
     df_snp['svStart'] = df_snp['SV_ID'].apply(lambda x: x.split(':')[1].split('-')[0])
     df_snp['svEnd'] = df_snp['SV_ID'].apply(lambda x: x.split('-')[1].split('_')[0])
@@ -292,49 +303,60 @@ def summary_eqtls():
     # QTLs
     print("Loading summary_eqtls chromosome" + str(chrom))
     df_eqtl = pd.read_csv('./data/summary_eqtls/chr'+str(chrom)+'_summary_eqtls.txt', sep='\t', names=['a', 'b'])
-    df_eqtl[['chr', 'locus', 'ref', 'alt', 'gen_ref']] = df_eqtl['a'].str.split('_', n=4, expand=True) # Split initial columns into usable ones
+    # print("df_eqtl : %s" % str(df_eqtl.shape))
+    df_eqtl[['chr', 'locus', 'ref', 'alt', 'assembly']] = df_eqtl['a'].str.split('_', n=4, expand=True) # Split initial columns into usable ones
     df_eqtl['locus'] = df_eqtl['locus'].astype(int)
     df_eqtl['tissues'] = df_eqtl['b'].str.split(';') # Fucks up because there is a ; at the end
     df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: x[:-1]) # Remove last empty element
     df_eqtl['tissues'] = df_eqtl['tissues'].apply(lambda x: stringlist_to_listlist(x))
     df_eqtl.drop(columns=['a', 'b'], inplace=True)
-    df_eqtl.drop(columns=['chr', 'gen_ref'], inplace=True)
+    df_eqtl.drop(columns=['chr', 'assembly'], inplace=True)
     # Join on POS/locus
     print("Joining")
     df_snp_eqtl = df_snp.set_index('POS').join(df_eqtl.set_index('locus'), how='inner')
 
     print("Transforming")
     # list = ["#CHROM,tissue,gene,POS,ref,alt,val,P\n"]
-    list = []
+    transformed_tissues = []
     for index, row in df_snp_eqtl.iterrows():
         for trow in row['tissues']:
             # Add values in array after tissue name, index = POS
             if str(trow[0]) == tissue and float(trow[3]) < p_val:
                 p_new = -math.log10(float(trow[3]))
-                list.append(str(chrom)+","+str(trow[0])+","+str(trow[1])+","+str(index)+","+row['ref']+","+row['alt']+","+str(trow[2])+","+str(p_new)+"\n")
+                transformed_tissues.append(str(chrom)+","+str(trow[0])+","+str(trow[1])+","+str(index)+","+row['ref']+","+row['alt']+","+str(trow[2])+","+str(p_new)+"\n")
     
     # list to df
     print("Converting")
-    df = pd.read_csv(StringIO(''.join(list)), sep=',', names=['#CHROM', 'tissue', 'ens', 'POS', 'ref', 'alt', 'val', 'P'])
-    # print(df)
+    df = pd.read_csv(StringIO(''.join(transformed_tissues)), sep=',', names=['#CHROM', 'tissue', 'ens', 'POS', 'ref', 'alt', 'val', 'P'])
+    # print("df : %s" % str(df.shape))
 
     # Ensemble to GeneName
     print("Loading Ensemble_to_GeneName")
     df_ens2gene = pd.read_csv('./data/Ensemble_to_GeneName.txt', sep='\t', names=['ens', 'gene'])
+    # print("df_ens2gene : %s" % str(df_ens2gene.shape))
     df = df.set_index('ens').join(df_ens2gene.set_index('ens'), how='inner')
     df.reset_index(inplace=True)
-    # print(df)
-    # df.drop(columns=['ens'], inplace=True)
+    # print("df + df_ens2gene: %s" % str(df.shape))
+
     # Genes
     print("Loading Genes")
     df_genes = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+    # print("df_genes : %s" % str(df_genes.shape))
     df_genes = df_genes[df_genes['chrom'] == "chr"+str(chrom)]
     df_genes = df_genes.filter(['name', 'txStart', 'txEnd', '#geneName'])
+    # df_genes['color'] = df_genes['#geneName'].apply(lambda x: hex(abs(hash(x)))[6:])
     df = df.set_index('gene').join(df_genes.set_index('#geneName'), how='inner')
     df.reset_index(inplace=True)
-    # print(df)
+    # print("df + df_ens2gene + df_genes: %s" % str(df.shape))
 
     print("Sending")
+    return Response(df.to_csv(index=False), mimetype="text/plain")
+
+
+@app.route('/data/genes')
+def get_genes():
+    df = pd.read_csv('./data/genes_hg38.txt', sep='\t')
+    # df['color'] = df['#geneName'].apply(lambda x: hex(abs(hash(x)))[6:])
     return Response(df.to_csv(index=False), mimetype="text/plain")
 
 
