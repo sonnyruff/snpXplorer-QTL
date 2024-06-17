@@ -122,11 +122,10 @@
     </div>
 
     
-    <!-- D3 -->
     <script src="https://d3js.org/d3.v4.js"></script>
     <!-- <script src="{{ url_for('static', filename='js/d3_tests.js') }}"></script> -->
     <!-- <script type="module" src="{{ url_for('static', filename='js/gosling_tests.js') }}"></script> -->
-    {% if chrom %}
+    {% if chrom %} <!-- Only checking on chrom might cause problems later -->
         <script type="module" src="{{ url_for('static', filename='js/gosling_2.js') }}"></script>
     {% endif %}
     

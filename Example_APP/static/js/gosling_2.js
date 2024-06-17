@@ -19,16 +19,21 @@ var chrom = parseInt(data.chrom),
   start = parseInt(data.start),
   end = parseInt(data.end),
   p_val = parseFloat(data.p_val),
-  tissues = data.tissues;
+  tissues = data.tissues,
+  geneTrackB = data.genetrack, // attributes are for some reason converted to lowercase and CAN'T be accessed otherwise !!!!!!
+  tissueBetweenTrack = data.tissuebetweentrack,
+  tissueTrack = data.tissuetrack,
+  snppValTrack = data.snppvaltrack,
+  snpsvBetweenTrack = data.snpsvbetweentrack,
+  svTrack = data.svtrack;
 
 tissues = tissues.replace(/\s/g, "").replace(/\[|\]/g, "").replace(/\'/g, "").split(",")
-// tissues = ["Whole_Blood", "Stomach"]
 
 const width = 1500,
     bandHeight = 30,
     linkHeight = 100;
 
-//==================================================================
+////////////////////////////////////////////////////////////////////////////////
 
 const snp_sv_data = {
   "url": "/data/data_snp_sv?chr="+chrom+"&p="+p_val+"&start="+start+"&end="+end,
@@ -39,7 +44,7 @@ const snp_sv_data = {
 };
 
 
-//==================================================================
+////////////////////////////////////////////////////////////////////////////////
 
 // todo doesn't work
 // const getTissueTrack = {
@@ -48,7 +53,7 @@ const snp_sv_data = {
 //   }
 // }
 
-//==================================================================
+////////////////////////////////////////////////////////////////////////////////
 
 const genomeTrack = {
   title: 'G-bands',
@@ -113,7 +118,7 @@ const genomeTrack = {
   ]
 }
 
-//==================================================================
+////////////////////////////////////////////////////////////////////////////////
 
 const geneTrackNew = {
   title: "Genes",
@@ -291,9 +296,10 @@ const geneTrack = {
   height: 80
 }
 
-//==================================================================
+////////////////////////////////////////////////////////////////////////////////
 
 // Crashes the site when zooming in and out too fast
+
 const baseTrack = { // ===== Bases =====
   "layout": "linear",
   "alignment": "overlay",
@@ -351,7 +357,7 @@ const baseTrack = { // ===== Bases =====
   "height": bandHeight
 }
 
-//==================================================================
+////////////////////////////////////////////////////////////////////////////////
 
 const get_tissue_track = (chrom, tissue, start, end) => {
   return {
@@ -396,7 +402,7 @@ const get_tissue_between_track = (chrom, tissue, start, end) => {
     strokeWidth: { value: 0.8 },
     // opacity: {"field": "P", "type": "quantitative"},
     color: { value: '#85B348' },
-    style: { outlineWidth: 0, linkConnectionType: 'curve'},
+    style: { linkConnectionType: 'curve'},
     // eventStyle: { strokeWidth: 2 },
     width,
     height: linkHeight,
@@ -408,6 +414,79 @@ const get_tissue_between_track = (chrom, tissue, start, end) => {
   }
 }
 
+const get_SNP_P = () => {
+  return { // ===== SNP P-values =====
+    data: snp_sv_data,
+    mark: "bar",
+    x: {"field": "POS", "type": "genomic"},
+    y: {"field": "P", "type": "quantitative"},
+    // color: {"field": "sample", "type": "nominal"},
+    color: {value: "grey"},
+    height: 60,
+    "tooltip": [
+      {"field": "POS", "type": "genomic", "alt": "Locus"},
+      {"field": "P", "type": "nominal", "alt": "P"},
+      {"field": "svStart", "type": "genomic", "alt": "svStart"}
+    ]
+  }
+}
+
+const get_SNPs = () => {
+  return { // ===== SNPs =====
+    data: snp_sv_data,
+    mark: "rect",
+    "x": {"field": "POS", "type": "genomic"},
+    // "y": {"field": "P", "type": "quantitative"},
+    "color": {"value": "grey"},
+    "width": width,
+    "height": bandHeight,
+    "tooltip": [
+      {"field": "POS", "type": "genomic", "alt": "Locus"}
+    ]
+  }
+}
+
+const get_SNP_SV_links = () => {
+  return { // ===== LinkBetweens =====
+    data: snp_sv_data,
+    mark: 'betweenLink',
+    x: { field: 'POS', type: 'genomic' },
+    // xe: { field: 'POS', type: 'genomic' }, // These break it
+    x1: { field: 'svStart', type: 'genomic' },
+    // x1e: { field: 'svEnd', type: 'genomic' }, // These break it
+    stroke: { value: '#4C6629' },
+    strokeWidth: { value: 0.8 },
+    opacity: {"field": "P", "type": "quantitative"},
+    color: { value: '#85B348' },
+    style: { linkConnectionType: 'curve' },
+    width,
+    height: linkHeight,
+    tooltip: [
+      {"field": "POS", "type": "genomic", "alt": "SNP"},
+      {"field": "svStart", "type": "genomic", "alt": "svStart"},
+      {"field": "svEnd", "type": "genomic", "alt": "svEnd"}
+    ]
+  }
+}
+
+const get_SVs = () => {
+  return { // ===== SVs =====
+    "data": snp_sv_data,
+    "mark": "rect",
+    "x": {"field": "svStart", "type": "genomic"},
+    "xe": {"field": "svEnd", "type": "genomic"},
+    "color": {"value": "grey"},
+    "width": width,
+    "height": bandHeight,
+    "tooltip": [
+      {"field": "svStart", "type": "genomic", "alt": "svStart"},
+      {"field": "svEnd", "type": "genomic", "alt": "svEnd"}
+    ]
+  }
+}
+
+//==================================================================
+
 const get_main_view = () => {
   const view = {
     "layout": "linear",
@@ -415,75 +494,43 @@ const get_main_view = () => {
     "spacing": 0,
     "tracks": [
       // genomeTrack,
-      { // ===== SNP P-values =====
-        data: snp_sv_data,
-        mark: "bar",
-        x: {"field": "POS", "type": "genomic"},
-        y: {"field": "P", "type": "quantitative"},
-        // color: {"field": "sample", "type": "nominal"},
-        color: {value: "grey"},
-        height: 60,
-        "tooltip": [
-          {"field": "POS", "type": "genomic", "alt": "Locus"},
-          {"field": "P", "type": "nominal", "alt": "P"},
-          {"field": "svStart", "type": "genomic", "alt": "svStart"}
-        ]
-      },
+      get_SNP_P(),
       // baseTrack,
-      // { // ===== SNPs =====
-      //   data: snp_sv_data,
-      //   mark: "rect",
-      //   "x": {"field": "POS", "type": "genomic"},
-      //   // "y": {"field": "P", "type": "quantitative"},
-      //   "color": {"value": "grey"},
-      //   "width": width,
-      //   "height": bandHeight,
-      //   "tooltip": [
-      //     {"field": "POS", "type": "genomic", "alt": "Locus"}
-      //   ]
-      // },
-      // { // ===== LinkBetweens =====
-      //   data: snp_sv_data,
-      //   mark: 'betweenLink',
-      //   x: { field: 'POS', type: 'genomic' },
-      //   // xe: { field: 'POS', type: 'genomic' }, // These break it
-      //   x1: { field: 'svStart', type: 'genomic' },
-      //   // x1e: { field: 'svEnd', type: 'genomic' }, // These break it
-      //   stroke: { value: '#4C6629' },
-      //   strokeWidth: { value: 0.8 },
-      //   opacity: {"field": "P", "type": "quantitative"},
-      //   color: { value: '#85B348' },
-      //   style: { outlineWidth: 0, linkConnectionType: 'curve' },
-      //   width,
-      //   height: linkHeight,
-      //   tooltip: [
-      //     {"field": "POS", "type": "genomic", "alt": "SNP"},
-      //     {"field": "svStart", "type": "genomic", "alt": "svStart"},
-      //     {"field": "svEnd", "type": "genomic", "alt": "svEnd"}
-      //   ]
-      // },
-      { // ===== SVs =====
-        "data": snp_sv_data,
-        "mark": "rect",
-        "x": {"field": "svStart", "type": "genomic"},
-        "xe": {"field": "svEnd", "type": "genomic"},
-        "color": {"value": "grey"},
-        "width": width,
-        "height": bandHeight,
-        "tooltip": [
-          {"field": "svStart", "type": "genomic", "alt": "svStart"},
-          {"field": "svEnd", "type": "genomic", "alt": "svEnd"}
-        ]
-      },
+      // get_SNPs(),
+      get_SNP_SV_links(),
+      get_SVs(),
       geneTrack,
     ]
   };
 
   // This might've just been able to be put under the spec object below
   for(let i = 0; i < tissues.length; i++){
-    // view["tracks"].push(get_tissue_between_track(chrom, tissues[i], start, end))
+    view["tracks"].push(get_tissue_between_track(chrom, tissues[i], start, end))
     view["tracks"].push(get_tissue_track(chrom, tissues[i], start, end))
   }
+
+  return view;
+};
+
+const get_main_view_2 = () => {
+  const view = {
+    "layout": "linear",
+    "xDomain": {"chromosome": "chr"+chrom, "interval": [start, end]},
+    "spacing": 0,
+    "tracks": []
+  };
+
+  if (geneTrackB == "True") view["tracks"].push(geneTrack)
+
+  // This might've just been able to be put under the spec object below
+  for(let i = 0; i < tissues.length; i++){
+    if (tissueBetweenTrack == "True") view["tracks"].push(get_tissue_between_track(chrom, tissues[i], start, end))
+    if (tissueTrack == "True") view["tracks"].push(get_tissue_track(chrom, tissues[i], start, end))
+  }
+
+  if (snppValTrack == "True") view["tracks"].push(get_SNP_P())
+  if (snpsvBetweenTrack == "True") view["tracks"].push(get_SNP_SV_links())
+  if (svTrack == "True") view["tracks"].push(get_SVs())
 
   return view;
 };
@@ -493,8 +540,8 @@ const get_main_view = () => {
  * @returns {GoslingSpec}
  */
 const spec = {
-  title: "Visual Encoding",
-  subtitle: "Gosling provides diverse visual encoding methods",
+  // title: "Visual Encoding",
+  // subtitle: "Gosling provides diverse visual encoding methods",
   layout: "linear",
   arrangement: "vertical",
   assembly: "hg38",
@@ -508,12 +555,9 @@ const spec = {
       ]
     },
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    get_main_view()
+    get_main_view_2()
   ]
 };
-
-
-
 
 
 embed(document.getElementById('gosling-container'), spec);

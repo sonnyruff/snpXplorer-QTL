@@ -15,41 +15,39 @@
 
         <!-- Here's the first block: GWAS choice, Reference genome and Browsing options -->
         <form id="exploration_form" method="POST">
-            <!-- Reference genome -->
             <div style="padding: 10px; background-color: #9FD8C6; margin: 20px; width: 45%; float:left">
-                <!-- <h4 style="margin-bottom:0">Reference Genome</h4>
-                <input type="radio" name="refGenome" id="GRCh37" value="GRCh37" checked> GRCh37 </input>
-                <input type="radio" name="refGenome" id="GRCh38" value="GRCh38" > GRCh38 </input><br> -->
-                <h4 style="margin-bottom:0">Chromosome</h4>
-                <select name="chrom" id="chrom">
-                    <option value="1">Chromosome 1</option>
-                    <option value="2">Chromosome 2</option>
-                    <option value="3">Chromosome 3</option>
-                    <option value="4">Chromosome 4</option>
-                    <option value="5">Chromosome 5</option>
-                    <option value="6">Chromosome 6</option>
-                    <option value="7">Chromosome 7</option>
-                    <option value="8">Chromosome 8</option>
-                    <option value="9">Chromosome 9</option>
-                    <option value="10">Chromosome 10</option>
-                    <option value="11">Chromosome 11</option>
-                    <option value="12">Chromosome 12</option>
-                    <option value="13">Chromosome 13</option>
-                    <option value="14">Chromosome 14</option>
-                    <option value="15">Chromosome 15</option>
-                    <option value="16">Chromosome 16</option>
-                    <option value="17">Chromosome 17</option>
-                    <option value="18">Chromosome 18</option>
-                    <option value="19">Chromosome 19</option>
-                    <option value="20">Chromosome 20</option>
-                    <option value="21">Chromosome 21</option>
-                    <option value="22">Chromosome 22</option>
-                    <option value="X">Chromosome X</option>
-                </select>
                 <h4 style="margin-bottom:0">Tissue</h4>
-                <small style="color: grey;">Ctrl + click to select multiple</small>
                 <select name="tissue" id="tissue" multiple></select>
-            </div>
+                <div>
+                    <small style="color: grey;">"Ctrl + click" to select multiple</small>
+                </div>
+
+                <h4 style="margin-bottom:0">Tracks</h4>
+                <div>
+                    <input type="checkbox" id="geneTrack" name="geneTrack" value="geneTrack" checked>
+                    <label for="geneTrack">geneTrack</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="tissueBetweenTrack" name="tissueBetweenTrack" value="tissueBetweenTrack" checked>
+                    <label for="tissueBetweenTrack">tissueBetweenLinks</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="tissueTrack" name="tissueTrack" value="tissueTrack" checked>
+                    <label for="tissueTrack">tissueTrack</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="snppValTrack" name="snppValTrack" value="snppValTrack" checked>
+                    <label for="snppValTrack">SNP P-values</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="snpsvBetweenTrack" name="snpsvBetweenTrack" value="snpsvBetweenTrack" checked>
+                    <label for="snpsvBetweenTrack">SNP SV links</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="svTrack" name="svTrack" value="svTrack" checked>
+                    <label for="svTrack">svTrack</label>
+                </div>
+            </div> 
 
             <script>
                 var tissues = ['Cells_Cultured_fibroblasts', 'Heart_Atrial_Appendage',
@@ -91,11 +89,13 @@
                     }
                 </style>
                 <!-- Locus/Interval/RsID/Gene <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br>  -->
-                Locus <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br> 
+                Locus <br><input id="browse_option" type="text" name="browse" placeholder="PLCG2" value="{{ request.form.get('browse', '') }}"><br>
+                <div>
+                    <small style="color: grey;">Example: 1:1000000 / 1:1000000-1200000 / APOE / rs7412</small>
+                </div>
                 Window <input type="range" min="1000" max="250000" value="{{ request.form.get('window', '25000') }}" step="1000" name="window" oninput="updateValue(this.value)" id="window">
                 <p>Current value: <span id="slider-value">{{ request.form.get('window', '25000') }}</span></p>
                 P-Value <br><input id="p_val" type="text" name="p_val" placeholder="0.000001" value="{{ request.form.get('p_val', '') }}"><br> 
-                <!-- <small style="color: blue;">Example: 1:1000000 / 1:1000000-1200000 / APOE / rs7412</small> -->
             </div>
             
             <!-- Submit button to start the search -->
@@ -124,8 +124,20 @@
 
         <!-- Main Plot -->
         <!-- <div id="my_dataviz"></div> -->
-        {% if chrom %}
-            <meta id="my-data" data-chrom="{{chrom}}" data-locus="{{locus}}" data-start="{{start}}" data-end="{{end}}" data-p_val="{{p_val}}" data-tissues="{{tissues}}">
+        {% if chrom %} <!-- Only checking on chrom might cause problems later -->
+            <meta id="my-data"
+                data-chrom="{{chrom}}"
+                data-start="{{start}}"
+                data-end="{{end}}"
+                data-p_val="{{p_val}}"
+                data-tissues="{{tissues}}"
+                data-geneTrack="{{geneTrack}}"
+                data-tissueBetweenTrack="{{tissueBetweenTrack}}"
+                data-tissueTrack="{{tissueTrack}}"
+                data-snppValTrack="{{snppValTrack}}"
+                data-snpsvBetweenTrack="{{snpsvBetweenTrack}}"
+                data-svTrack="{{svTrack}}"
+            >
             <div id="gosling-container"></div>
         {% endif %}
         

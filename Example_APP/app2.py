@@ -484,7 +484,7 @@ def readBrowseOption(data_path, browse, window, refGen):
     elif ':' in browse and '-' in browse:
         chrom, start_pos, end_pos, browse_type = int(browse.split(':')[0]), int(browse.split(':')[1].split('-')[0]) - window, int(browse.split(':')[1].split('-')[1]) + window, 'Interval'
     elif 'rs' in browse:
-        snps = pd.DataFrame(8(browse.replace(' ', '')).locations)
+        snps = pd.DataFrame(get_variants_by_variant_id(browse.replace(' ', '')).locations)
         chrom, pos, browse_type = snps['chromosomeName'][0], snps['chromosomePosition'][0], 'RsID'
         if refGen == 'GRCh37':
             converter = get_lifter('hg38', 'hg19')
