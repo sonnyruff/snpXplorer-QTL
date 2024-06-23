@@ -108,7 +108,7 @@ def example_page():
         snpsvBetweenTrack = request.form.get("snpsvBetweenTrack") is not None
         svTrack = request.form.get("svTrack") is not None
  
-        chrom, start, end, browse_type = readBrowseOption(browse, range)
+        chrom, locus, start, end, browse_type = readBrowseOption(browse, range)
 
         print(request.form)
         print(session)
@@ -120,6 +120,7 @@ def example_page():
         return render_template(
             "example.html",
             chrom=chrom,
+            locus=locus,
             start=start,
             end=end,
             p_val=p_val,
@@ -224,6 +225,7 @@ def summary_eqtls():
     # SVs
     print("Loading data_snp_sv chromosome" + str(chrom))
     df_snp = pd.read_csv('./data/data_snp_sv/chr'+str(chrom)+'.allQTLs.NEWSET.JOIN_size.txt', sep='\t')
+    # df_snp = pd.read_csv('./data/data_snp_sv/chr'+str(chrom)+'.allQTLs.TE.txt', sep='\t')
     # print("df_snp : %s" % str(df_snp.shape))
     df_snp = df_snp.filter(['POS', 'P', 'SV_ID'], axis=1)
     df_snp['svStart'] = df_snp['SV_ID'].apply(lambda x: x.split(':')[1].split('-')[0])

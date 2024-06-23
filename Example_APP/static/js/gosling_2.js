@@ -94,7 +94,7 @@ const genomeTrack = {
         field: "Stain",
         type: "nominal",
         domain: ["gneg", "gpos25", "gpos50", "gpos75", "gpos100", "gvar"],
-        range: ["white", "#D9D9D9", "#979797", "#636363", "black", "#A0A0F2"]
+        range: ["white", "#D9D9D9", "#979797", "#636363", "yellow", "#A0A0F2"]
       }
     },
     //*** the second right triangle track 
@@ -361,7 +361,7 @@ const baseTrack = { // ===== Bases =====
 
 const get_tissue_track = (chrom, tissue, start, end) => {
   return {
-    title: tissue,
+    title: tissue + "-SNP P-values",
     data: {
       url: "/data/summary_eqtls?chr="+chrom+"&tissue="+tissue+"&start="+start+"&end="+end+"&p="+p_val,
       type: "csv",
@@ -416,12 +416,13 @@ const get_tissue_between_track = (chrom, tissue, start, end) => {
 
 const get_SNP_P = () => {
   return { // ===== SNP P-values =====
+    title: "SNP-SV P-values",
     data: snp_sv_data,
-    mark: "bar",
+    mark: "point",
     x: {"field": "POS", "type": "genomic"},
     y: {"field": "P", "type": "quantitative"},
-    // color: {"field": "sample", "type": "nominal"},
-    color: {value: "grey"},
+    color: {"field": "svStart", "type": "nominal"},
+    width,
     height: 60,
     "tooltip": [
       {"field": "POS", "type": "genomic", "alt": "Locus"},
@@ -471,6 +472,7 @@ const get_SNP_SV_links = () => {
 
 const get_SVs = () => {
   return { // ===== SVs =====
+    title: "Structural Variants",
     "data": snp_sv_data,
     "mark": "rect",
     "x": {"field": "svStart", "type": "genomic"},
@@ -482,6 +484,29 @@ const get_SVs = () => {
       {"field": "svStart", "type": "genomic", "alt": "svStart"},
       {"field": "svEnd", "type": "genomic", "alt": "svEnd"}
     ]
+  }
+}
+
+//==================================================================
+
+const SNP_marker = () => {
+  return {
+    title: "Locus " + locus,
+    width,
+    height: 20,
+    "style": {"dashed": [3, 3]},
+    "data": {
+      "type": "json",
+      "values": [
+        {"c": "chr"+chrom, "p": locus}
+      ],
+      "chromosomeField": "c",
+      "genomicFields": ["p"]
+    },
+    "mark": "rule",
+    "x": {"field": "p", "type": "genomic"},
+    "strokeWidth": {"value": 2},
+    "color": {"value": "blue"}
   }
 }
 
@@ -527,6 +552,8 @@ const get_main_view_2 = () => {
     if (tissueBetweenTrack == "True") view["tracks"].push(get_tissue_between_track(chrom, tissues[i], start, end))
     if (tissueTrack == "True") view["tracks"].push(get_tissue_track(chrom, tissues[i], start, end))
   }
+
+  view["tracks"].push(SNP_marker())
 
   if (snppValTrack == "True") view["tracks"].push(get_SNP_P())
   if (snpsvBetweenTrack == "True") view["tracks"].push(get_SNP_SV_links())

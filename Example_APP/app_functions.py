@@ -8,21 +8,22 @@ from pandasgwas import get_variants_by_variant_id
 def readBrowseOption(browse, window):
     if ':' in browse and '-' not in browse: # 1:100000
         words = browse.split(':')
-        chrom, start_pos, end_pos, browse_type = int(words[0]), int(words[1]) - window, int(words[1]) + window, 'Single position'
+        chrom, locus, start_pos, end_pos, browse_type = int(words[0]), int(words[1]), int(words[1]) - window, int(words[1]) + window, 'Single position'
     elif ':' in browse and '-' in browse: # 1:100000-200000
         words = browse.split(':')
-        chrom, start_pos, end_pos, browse_type = int(words[0]), int(words[1].split('-')[0]) - window, int(words[1].split('-')[1]) + window, 'Interval'
+        chrom, locus, start_pos, end_pos, browse_type = int(words[0]), int(words[1].split('-')[0]), int(words[1].split('-')[0]) - window, int(words[1].split('-')[1]) + window, 'Interval'
     elif 'rs' in browse:
         snps = pd.DataFrame(get_variants_by_variant_id(browse.replace(' ', '')).locations)
-        chrom, pos, browse_type = int(snps['chromosomeName'][0]), snps['chromosomePosition'][0], 'RsID'
-        start_pos, end_pos = (pos - window).item(), (pos + window).item() # .item() converts numpy.int64 to int
+        chrom, locus, browse_type = int(snps['chromosomeName'][0]), snps['chromosomePosition'][0], 'RsID'
+        start_pos, end_pos = (locus - window).item(), (locus + window).item() # .item() converts numpy.int64 to int
     else:
         data_path = './data/genes_hg38.txt'
         df = pd.read_csv(data_path, sep='\t')
         genes = df[df['#geneName'] == browse].to_numpy()[0]
+        locus = genes[3]
         chrom, start_pos, end_pos, browse_type = genes[1].replace('chr', ''), int(genes[3]) - window, int(genes[4]) + window, 'Gene'
 
-    return chrom, start_pos, end_pos, browse_type
+    return chrom, locus, start_pos, end_pos, browse_type
 
 
 """
